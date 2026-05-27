@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useMotionValue, useSpring } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Cover } from "./Cover";
 import { Page } from "./Page";
 import { BackCover } from "./BackCover";
@@ -19,7 +19,7 @@ import {
 /**
  * Interactive 3D book. Pointer X drives `openness` (0 = closed, 1 = open)
  * while in idle mode. In reading mode the book is pinned open and Next/Back
- * flip individual pages using Framer Motion's `animate` prop.
+ * flip individual pages via imperative spring animations.
  *
  * The outer div is `absolute inset-0` so that BookButtons — which lives
  * outside the perspective container — can use viewport-relative positioning
@@ -28,6 +28,10 @@ import {
 export function Book() {
   const openness = useMotionValue(0);
   const smoothOpenness = useSpring(openness, OPENNESS_SPRING);
+
+  // Scene tilt interpolates from the design tilt → 0° as the book opens.
+  const tiltX = useTransform(smoothOpenness, [0, 1], [SCENE_TILT_X_DEG, 0]);
+  const tiltZ = useTransform(smoothOpenness, [0, 1], [SCENE_TILT_Z_DEG, 0]);
 
   const [mode, setMode] = useState<BookMode>("idle");
   const [currentPage, setCurrentPage] = useState(0);
@@ -101,14 +105,15 @@ export function Book() {
           perspectiveOrigin: "50% 45%",
         }}
       >
-        <div
+        <motion.div
           className="relative"
           style={{
             width: "var(--book-width)",
             height: "var(--book-height)",
             left: OPEN_CENTRE_OFFSET,
             transformStyle: "preserve-3d",
-            transform: `rotateX(${SCENE_TILT_X_DEG}deg) rotateZ(${SCENE_TILT_Z_DEG}deg)`,
+            rotateX: tiltX,
+            rotateZ: tiltZ,
           }}
         >
           <BackCover />
@@ -116,7 +121,7 @@ export function Book() {
             <Page key={i} index={i} openness={smoothOpenness} readingPage={readingPage} />
           ))}
           <Cover openness={smoothOpenness} />
-        </div>
+        </motion.div>
       </div>
 
       {/* 2D button overlay — outside the perspective container so it isn't

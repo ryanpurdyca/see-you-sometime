@@ -139,6 +139,11 @@ Append new entries at the bottom. Use the format: `### YYYY-MM-DD — Title`.
 - **`BookButtons`** (`src/components/book/BookButtons.tsx`) is a flat 2D overlay positioned outside the perspective container. Opacity is driven directly by the `smoothOpenness` MotionValue. `pointerEvents` toggles via React state updated with `useMotionValueEvent` above a 0.15 threshold so invisible buttons aren't clickable. Button labels and handlers derive from `mode` + `currentPage`.
 - **`Book` outer div is `absolute inset-0`**: changed from a flex child to a full-viewport absolute element so `BookButtons` can use `left: calc(50vw...)` positioning without being offset by the perspective container or the book's own dimensions.
 
+### 2026-05-27 — Tilt-to-zero on open; animated Read transition
+
+- **Scene tilt reduces to 0° as book opens.** `tiltX` and `tiltZ` are `useTransform` MotionValues derived from `smoothOpenness` (`[0,1] → [SCENE_TILT_X_DEG, 0]` and `[SCENE_TILT_Z_DEG, 0]`). The book inner div is now a `motion.div` with `style={{ rotateX: tiltX, rotateZ: tiltZ }}` instead of a static `transform` string.
+- **Persistent `rotateY` MotionValue in `Page`.** Previously, switching between idle and reading modes swapped between `style.rotateY` (MotionValue) and `animate.rotateY` (declarative), causing Framer Motion to lose the current position and snap. Fix: a single `rotateY = useMotionValue(...)` always lives in `style`. A `useEffect` drives it in two ways: in idle mode it subscribes to `idleRotateY` changes; in reading mode it calls the imperative `animate(rotateY, target, spring)` which correctly springs FROM the current position. This gives a smooth fan-to-flat collapse on Read and clean page flips on Next/Back.
+
 ## 6. Design system
 
 **Tokens** (`src/design-system/tokens.css`):

@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, type MotionValue, useTransform } from "framer-motion";
+import { animate, motion, useMotionValue, useTransform, type MotionValue } from "framer-motion";
+import { useEffect } from "react";
 import { cn } from "@/design-system";
 import { COVER_OPEN_ANGLE, NUM_PAGES, PAGE_FAN_SPREAD, PAGE_Z_STEP } from "./constants";
 
@@ -9,18 +10,18 @@ type Props = {
   index: number;
   openness: MotionValue<number>;
   /**
-   * null  → idle fan mode, rotateY driven by the openness spring.
-   * number → reading mode; pages with index < readingPage flip to the left
-   *          (COVER_OPEN_ANGLE) and pages with index >= readingPage sit flat at 0°.
+   * null  → idle fan mode, rotateY tracks the openness spring.
+   * number → reading mode; pages with index < readingPage spring to
+   *          COVER_OPEN_ANGLE (left/read stack), others spring to 0° (right/unread).
    */
   readingPage: number | null;
 };
 
 /**
- * A single hinged page. In idle mode pages stagger their opening so that the
- * cover lifts first. In reading mode each page either sits flat on the right
- * (unread) or has flipped to the left (read), animated with a spring so that
- * clicking Next/Back produces a realistic single-page turn.
+ * A single hinged page. Uses a persistent `rotateY` MotionValue that is
+ * always in `style` — never swapped for an `animate` prop — so Framer Motion
+ * always knows the true current angle and can spring from it cleanly when
+ * switching between idle fan and reading-mode page-flip.
  */
 export function Page({ index, openness, readingPage }: Props) {
   const fanFraction = (index + 1) / (NUM_PAGES + 1);
@@ -30,10 +31,29 @@ export function Page({ index, openness, readingPage }: Props) {
   const idleRotateY = useTransform(openness, [opensAt, 1], [0, finalAngle], { clamp: true });
 
   const translateZ = (index + 1) * PAGE_Z_STEP;
-
   const isEdgePage = index === NUM_PAGES - 1;
-  const isReading = readingPage !== null;
-  const readTargetY = isReading ? (index < readingPage ? COVER_OPEN_ANGLE : 0) : 0;
+
+  // Persistent MotionValue — stays in `style` at all times so we can drive
+  // it either by subscribing to idleRotateY or by an imperative spring,
+  // without Framer Motion losing track of the current position.
+  const rotateY = useMotionValue(idleRotateY.get());
+
+  useEffect(() => {
+    if (readingPage === null) {
+      // Idle: keep rotateY in sync with the fan spring.
+      rotateY.set(idleRotateY.get());
+      return idleRotateY.on("change", (v) => rotateY.set(v));
+    } else {
+      // Reading: spring-animate to the target angle from wherever we are now.
+      const target = index < readingPage ? COVER_OPEN_ANGLE : 0;
+      const controls = animate(rotateY, target, {
+        type: "spring",
+        stiffness: 140,
+        damping: 24,
+      });
+      return () => controls.stop();
+    }
+  }, [readingPage, index, idleRotateY, rotateY]);
 
   return (
     <motion.div
@@ -48,12 +68,8 @@ export function Page({ index, openness, readingPage }: Props) {
         transformOrigin: "0% 50%",
         transformStyle: "preserve-3d",
         translateZ,
-        // In reading mode rotateY is driven by `animate` below; removing it
-        // from `style` prevents the MotionValue and animate from conflicting.
-        ...(isReading ? {} : { rotateY: idleRotateY }),
+        rotateY,
       }}
-      animate={isReading ? { rotateY: readTargetY } : undefined}
-      transition={isReading ? { type: "spring", stiffness: 140, damping: 24 } : undefined}
     >
       {/* Subtle gradient hints at page curvature without using an image. */}
       <div
