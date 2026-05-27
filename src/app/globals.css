@@ -7,9 +7,11 @@
  * Add new utilities here by mapping a `--color-foo` token to a `--color-foo`
  * Tailwind theme entry.
  */
-@theme inline {
-  --font-handwritten: var(--font-handwritten);
+@utility font-handwritten {
+  font-family: var(--font-handwritten);
+}
 
+@theme inline {
   --color-canvas: var(--color-canvas);
   --color-surface: var(--color-surface);
   --color-surface-raised: var(--color-surface-raised);
