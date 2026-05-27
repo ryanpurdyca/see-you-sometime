@@ -11,7 +11,7 @@ export function LeftPageText() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute flex items-center justify-center overflow-hidden p-10"
+      className="pointer-events-none absolute flex items-center justify-center overflow-hidden py-8 pr-28 pl-4"
       style={{
         left: "calc(50vw - var(--book-width))",
         top: "calc(50vh - var(--book-height) / 2)",
@@ -19,7 +19,7 @@ export function LeftPageText() {
         height: "var(--book-height)",
       }}
     >
-      <p className="font-handwritten text-ink-subtle text-center text-[1.55rem] leading-snug">
+      <p className="font-handwritten text-ink-subtle text-center text-[2.1rem] leading-snug">
         Sed ut perspiciatis unde omnis iste natus error sit voluptatem santium remque totam rem
         aperiam
       </p>

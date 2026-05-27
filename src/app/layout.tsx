@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Just_Another_Hand } from "next/font/google";
+import { Geist, Caveat } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -7,9 +7,8 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const justAnotherHand = Just_Another_Hand({
+const caveat = Caveat({
   variable: "--font-handwritten",
-  weight: "400",
   subsets: ["latin"],
 });
 
@@ -20,10 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${justAnotherHand.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${caveat.variable} h-full antialiased`}>
       <body className="bg-canvas text-ink flex min-h-full flex-col">{children}</body>
     </html>
   );
