@@ -6,6 +6,7 @@ import { cn } from "@/design-system";
 import {
   COVER_OPEN_ANGLE,
   NUM_PAGES,
+  PAGE_BASE_PEEL_DEG,
   PAGE_FAN_SPREAD,
   PAGE_HOVER_PEEL_DEG,
   PAGE_Z_STEP,
@@ -20,11 +21,13 @@ type Props = {
    *          stack (COVER_OPEN_ANGLE), others sit on the right stack (0°).
    */
   readingPage: number | null;
-  /** True when this page should show the "ready to flip" peel on hover. */
+  /** True when this page should show the base reading-mode peel (always-on). */
+  peeled: boolean;
+  /** True when additionally hovered — adds extra peel on top of the base. */
   hovered: boolean;
 };
 
-export function Page({ index, openness, readingPage, hovered }: Props) {
+export function Page({ index, openness, readingPage, peeled, hovered }: Props) {
   const fanFraction = (index + 1) / (NUM_PAGES + 1);
   const finalAngle = -PAGE_FAN_SPREAD * fanFraction;
 
@@ -56,15 +59,14 @@ export function Page({ index, openness, readingPage, hovered }: Props) {
   );
 
   useEffect(() => {
-    const target =
-      hovered && readingPage !== null
-        ? index < readingPage
-          ? PAGE_HOVER_PEEL_DEG
-          : -PAGE_HOVER_PEEL_DEG
-        : 0;
+    let target = 0;
+    if (readingPage !== null && peeled) {
+      const deg = hovered ? PAGE_HOVER_PEEL_DEG : PAGE_BASE_PEEL_DEG;
+      target = index < readingPage ? deg : -deg;
+    }
     const controls = animate(hoverPeel, target, { type: "spring", stiffness: 220, damping: 22 });
     return () => controls.stop();
-  }, [hovered, readingPage, index, hoverPeel]);
+  }, [peeled, hovered, readingPage, index, hoverPeel]);
 
   const translateZ = (index + 1) * PAGE_Z_STEP;
 

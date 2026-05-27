@@ -58,6 +58,10 @@ export const OPEN_CENTRE_OFFSET = "calc(var(--book-width) / 2)";
 /** Additional rotateX applied to the scene in reading mode to give pages subtle depth. */
 export const READING_SCENE_TILT_X = 6;
 
-/** rotateY offset (degrees) applied to the about-to-flip page on hover,
- *  simulating a peel away from the stack while staying anchored at the spine. */
-export const PAGE_HOVER_PEEL_DEG = 12;
+/** Base rotateY peel (degrees) always present on about-to-flip pages in reading
+ *  mode — subtle enough that you can just barely see the page behind them. */
+export const PAGE_BASE_PEEL_DEG = 5;
+
+/** Additional rotateY peel on top of PAGE_BASE_PEEL_DEG when the user hovers,
+ *  giving a stronger "ready to flip" signal. */
+export const PAGE_HOVER_PEEL_DEG = 14;

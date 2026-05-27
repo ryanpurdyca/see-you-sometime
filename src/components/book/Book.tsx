@@ -138,9 +138,13 @@ export function Book() {
               index={i}
               openness={smoothOpenness}
               readingPage={readingPage}
+              peeled={
+                readingPage !== null &&
+                ((i === readingPage - 1 && readingPage > 0) || i === readingPage)
+              }
               hovered={
                 readingPage !== null &&
-                ((i === readingPage - 1 && hoveredSide === "left") ||
+                ((i === readingPage - 1 && readingPage > 0 && hoveredSide === "left") ||
                   (i === readingPage && hoveredSide === "right"))
               }
             />
