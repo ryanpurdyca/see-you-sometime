@@ -6,9 +6,10 @@ import { cn } from "@/design-system";
 import {
   COVER_OPEN_ANGLE,
   NUM_PAGES,
-  PAGE_BASE_PEEL_DEG,
+  PAGE_BASE_PEEL_LEFT_DEG,
+  PAGE_BASE_PEEL_RIGHT_DEG,
   PAGE_FAN_SPREAD,
-  PAGE_HOVER_PEEL_DEG,
+  PAGE_HOVER_BOOST_DEG,
   PAGE_SUB_PEEL_DEG,
   PAGE_Z_STEP,
 } from "./constants";
@@ -65,11 +66,12 @@ export function Page({ index, openness, readingPage, peeled, subPeeled, hovered 
   useEffect(() => {
     let target = 0;
     if (readingPage !== null) {
+      const isLeft = index < readingPage;
       let deg = 0;
-      if (hovered) deg = PAGE_HOVER_PEEL_DEG;
-      else if (peeled) deg = PAGE_BASE_PEEL_DEG;
+      if (peeled) deg = isLeft ? PAGE_BASE_PEEL_LEFT_DEG : PAGE_BASE_PEEL_RIGHT_DEG;
       else if (subPeeled) deg = PAGE_SUB_PEEL_DEG;
-      if (deg !== 0) target = index < readingPage ? deg : -deg;
+      if (deg !== 0 && hovered) deg += PAGE_HOVER_BOOST_DEG;
+      target = isLeft ? deg : -deg;
     }
     const controls = animate(hoverPeel, target, { type: "spring", stiffness: 220, damping: 22 });
     return () => controls.stop();

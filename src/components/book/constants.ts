@@ -58,16 +58,22 @@ export const OPEN_CENTRE_OFFSET = "calc(var(--book-width) / 2)";
 /** Additional rotateX applied to the scene in reading mode to give pages subtle depth. */
 export const READING_SCENE_TILT_X = 6;
 
-/** Base rotateY peel (degrees) always present on about-to-flip pages in reading
- *  mode. Tuned so the right side exposes a similar chunk of next-page
- *  (~19 units) as the left side does of cover-behind-page (~17 units). */
-export const PAGE_BASE_PEEL_DEG = 20;
+/**
+ * Base rotateY peel for the about-to-flip page in reading mode. Different
+ * per side because the geometry is asymmetric: the LEFT page folds from
+ * COVER_OPEN_ANGLE (−174°) toward 0°, the RIGHT folds from 0° toward −180°,
+ * and cos() is steeper near 90° than near 0° or 180°. To expose the same
+ * ~30 units of "page behind" on each side, the right needs a larger angle.
+ */
+export const PAGE_BASE_PEEL_LEFT_DEG = 20;
+export const PAGE_BASE_PEEL_RIGHT_DEG = 25;
 
-/** Smaller peel applied to the page directly behind the about-to-flip page,
- *  creating a visible two-layer cascade on the right side that mirrors the
- *  cover-behind-page-0 effect on the left side. */
-export const PAGE_SUB_PEEL_DEG = 10;
+/** Smaller peel applied to the page directly behind the about-to-flip page on
+ *  the right side, creating a visible two-layer cascade that mirrors the
+ *  cover-behind-page effect the left side gets for free from its fully-folded
+ *  back stack at COVER_OPEN_ANGLE. */
+export const PAGE_SUB_PEEL_DEG = 12;
 
-/** Additional rotateY peel on top of PAGE_BASE_PEEL_DEG when the user hovers,
+/** Additional rotateY peel added on top of the base peel when the user hovers,
  *  giving a stronger "ready to flip" signal. */
-export const PAGE_HOVER_PEEL_DEG = 14;
+export const PAGE_HOVER_BOOST_DEG = 6;
