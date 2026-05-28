@@ -85,7 +85,7 @@ src/
   components/                Feature compositions (not reusable primitives)
     book/
       Book.tsx               Top-level scene + reading mode state machine
-      Cover.tsx              Hinged front cover with face + inside surfaces
+      Cover.tsx              Black cover face: Vitally SVGs, Caveat labels (title + date range)
       Page.tsx               Single hinged page (idle fan or reading-flip)
       BackCover.tsx          Static back cover
       BookButtons.tsx        Fade-in Read/Cancel/Close/Next/Back button pair
@@ -174,6 +174,11 @@ Append new entries at the bottom. Use the format: `### YYYY-MM-DD — Title`.
 - **Button row spacing**: `top: calc(50vh + var(--book-height) / 2 + 32px)` — 32px fixed gap below the book bottom edge.
 - **BookButtons layout**: Redesigned from two edge-aligned buttons to a left group + right single. In reading mode the left group holds "Next" always and "Back" which fades in (`AnimatePresence`, opacity-only, 150ms) once `currentPage > 0`. "Close" sits on the right in both modes. In idle mode the left group shows "Read" and the right shows "Close".
 
+### 2026-05-28 — Cover branding: black face, Vitally artwork, Caveat labels
+
+- **Cover face** (`Cover.tsx`): black `bg-cover`, white inset frame (`cover-border-inner`), two Vitally SVGs and two independently positioned Caveat text blocks (title `text-2xl`, date range `text-lg`) using `style={{ fontFamily: "var(--font-caveat)" }}` — same pattern as `LeftPageText`.
+- **`cover-ink` token** for white typography on the black cover.
+
 ### 2026-05-28 — CursorFollower, Button design system component, visual polish
 
 - **`CursorFollower`** (`src/components/book/CursorFollower.tsx`). A custom cursor pill ("Read Book") rendered as a `position: fixed` element with `top: 0; left: 0` so it anchors to the viewport (without explicit insets, a `fixed` element's natural position is its document-flow position, which is off-screen at the bottom of a tall component tree). `x`/`y` are spring-smoothed (`stiffness: 250, damping: 25`) MotionValues tracking `pointermove`; the first move snaps to cursor position via `x.set()` directly on the spring to avoid an initial sweep from (0, 0). Opacity is a `useTransform` over `[openness, modeScale, hoverScale]` — three independent gates: (1) proximity gate ramps from 0→1 as openness goes 0.65→0.95; (2) `modeScale` fades to 0 in reading mode; (3) `hoverScale` gates on `onMouseEnter`/`onMouseLeave` of the idle book overlay in `Book.tsx`. All three must be non-zero for the pill to appear.
@@ -185,7 +190,7 @@ Append new entries at the bottom. Use the format: `### YYYY-MM-DD — Title`.
 
 **Tokens** (`src/design-system/tokens.css`):
 
-- Colors: `canvas`, `surface`, `surface-raised`, `ink`, `ink-muted`, `ink-subtle`, `accent`, `accent-strong`, `accent-soft`, `paper`, `paper-edge`, `cover`, `cover-border-inner`.
+- Colors: `canvas`, `surface`, `surface-raised`, `ink`, `ink-muted`, `ink-subtle`, `accent`, `accent-strong`, `accent-soft`, `paper`, `paper-edge`, `cover`, `cover-border-inner`, `cover-ink`.
 - Radii: `radius-xs`, `-sm`, `-md`, `-lg`.
 - Book geometry: `--book-width`, `--book-height`, `--book-spine`.
 - Motion: `--ease-out-soft`, `--ease-page`, `--duration-fast|base|slow`.

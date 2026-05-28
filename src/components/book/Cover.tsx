@@ -4,6 +4,12 @@ import { motion, type MotionValue, useTransform } from "framer-motion";
 import { cn } from "@/design-system";
 import { COVER_OPEN_ANGLE, NUM_PAGES, PAGE_Z_STEP } from "./constants";
 
+const coverTextStyle = { fontFamily: "var(--font-caveat)" } as const;
+
+const coverDateClass = cn("text-cover-ink absolute text-lg leading-snug font-bold");
+
+const coverTitleClass = cn("text-cover-ink absolute text-2xl leading-snug font-bold");
+
 type Props = {
   openness: MotionValue<number>;
 };
@@ -56,7 +62,7 @@ function CoverFace() {
         alt=""
         width={166}
         height={216}
-        className="absolute top-[11%] left-[9%] h-auto w-[30%] max-w-[108px] -rotate-6 select-none"
+        className="absolute top-[7%] left-[9%] h-auto w-[26%] max-w-[94px] -rotate-6 select-none"
         draggable={false}
       />
       <img
@@ -64,9 +70,20 @@ function CoverFace() {
         alt=""
         width={216}
         height={155}
-        className="absolute right-[7%] bottom-[13%] h-auto w-[42%] max-w-[138px] rotate-[7deg] select-none"
+        className="absolute right-[7%] bottom-[8%] h-auto w-[42%] max-w-[138px] rotate-[7deg] select-none"
         draggable={false}
       />
+      <p className={cn(coverTitleClass, "top-[10%] left-[42%] max-w-[48%]")} style={coverTextStyle}>
+        Memories from
+        <br />
+        my time at Vitally
+      </p>
+      <p
+        className={cn(coverDateClass, "bottom-[14%] left-[13%] max-w-[38%]")}
+        style={coverTextStyle}
+      >
+        Fall 2022 to Summer 2026
+      </p>
     </div>
   );
 }

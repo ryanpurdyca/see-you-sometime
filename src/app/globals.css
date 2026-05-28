@@ -31,6 +31,7 @@
   --color-gutter: var(--color-gutter);
   --color-cover: var(--color-cover);
   --color-cover-border-inner: var(--color-cover-border-inner);
+  --color-cover-ink: var(--color-cover-ink);
 
   --radius-xs: var(--radius-xs);
   --radius-sm: var(--radius-sm);
