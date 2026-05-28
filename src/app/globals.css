@@ -11,6 +11,10 @@
   font-family: var(--font-handwritten);
 }
 
+@utility font-caveat {
+  font-family: var(--font-caveat);
+}
+
 @theme inline {
   --color-canvas: var(--color-canvas);
   --color-surface: var(--color-surface);
