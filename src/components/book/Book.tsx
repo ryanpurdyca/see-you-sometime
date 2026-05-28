@@ -86,6 +86,8 @@ export function Book() {
 
   const handleRead = () => {
     openness.set(1);
+    // Directly drive smoothOpenness: useSpring tracking stalls when source jumps from 0.
+    animate(smoothOpenness, 1, { type: "spring", stiffness: 400, damping: 40 });
     setCurrentPageSync(0);
     setIsClosing(false);
     setHoveringBook(false);
