@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Tooltip } from "@/design-system";
 import {
@@ -17,6 +17,7 @@ import {
   PEOPLE_CLOUD_SPRING,
   PEOPLE_CLOUD_STABLE_THRESHOLD,
 } from "./constants";
+import { useBookReadingNav } from "./BookReadingContext";
 import { people, type Person } from "./people";
 
 type SimBubble = Person & {
@@ -207,7 +208,9 @@ function restTargets(home: SimBubble[], baseR: number): Map<string, BubbleTarget
 }
 
 export function PeopleCloud() {
+  const readingNav = useBookReadingNav();
   const containerRef = useRef<HTMLDivElement>(null);
+  const bubbleRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const [homeBubbles, setHomeBubbles] = useState<SimBubble[]>([]);
   const [baseR, setBaseR] = useState(0);
@@ -252,23 +255,42 @@ export function PeopleCloud() {
 
   const hoveredHome = hoveredId ? homeBubbles.find((b) => b.id === hoveredId) : null;
 
-  useLayoutEffect(() => {
-    if (!hoveredHome || !containerRef.current || baseR <= 0) {
-      setTooltipViewport(null);
-      return;
-    }
-    const rect = containerRef.current.getBoundingClientRect();
-    const grownR = baseR * PEOPLE_CLOUD_GROW_SCALE;
-    setTooltipViewport({
-      x: rect.left + hoveredHome.homeX,
-      y: rect.top + hoveredHome.homeY - grownR,
-    });
-  }, [hoveredHome, baseR, size]);
+  const setBubbleRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    if (el) bubbleRefs.current.set(id, el);
+    else bubbleRefs.current.delete(id);
+  }, []);
+
+  // Anchor from the bubble's painted box (3D + scale transforms included), not sim coords.
+  useEffect(() => {
+    if (!hoveredId) return;
+
+    let rafId = 0;
+    let active = true;
+
+    const updateTooltip = () => {
+      if (!active) return;
+      const el = bubbleRefs.current.get(hoveredId);
+      if (el) {
+        const box = el.getBoundingClientRect();
+        setTooltipViewport({
+          x: box.left + box.width / 2,
+          y: box.top,
+        });
+      }
+      rafId = requestAnimationFrame(updateTooltip);
+    };
+
+    updateTooltip();
+    return () => {
+      active = false;
+      cancelAnimationFrame(rafId);
+    };
+  }, [hoveredId]);
 
   return (
     <div
       ref={containerRef}
-      className="pointer-events-auto absolute inset-0"
+      className="pointer-events-none absolute inset-0"
       data-testid="people-cloud"
     >
       {size.width > 0 &&
@@ -279,7 +301,9 @@ export function PeopleCloud() {
           return (
             <motion.div
               key={b.id}
-              className="absolute overflow-hidden rounded-full"
+              ref={(el) => setBubbleRef(b.id, el)}
+              data-people-bubble
+              className="pointer-events-auto absolute overflow-hidden rounded-full"
               style={{
                 left: b.homeX - baseR,
                 top: b.homeY - baseR,
@@ -293,8 +317,15 @@ export function PeopleCloud() {
                 scale: t.r / baseR,
               }}
               transition={{ type: "spring", ...PEOPLE_CLOUD_SPRING }}
-              onMouseEnter={() => setHoveredId(b.id)}
-              onMouseLeave={() => setHoveredId(null)}
+              onMouseEnter={() => {
+                setHoveredId(b.id);
+                readingNav?.onRightPagePointer();
+              }}
+              onClick={() => readingNav?.onRightPageClick()}
+              onMouseLeave={() => {
+                setHoveredId(null);
+                setTooltipViewport(null);
+              }}
             >
               <Image
                 src={b.src}
@@ -317,6 +348,7 @@ export function PeopleCloud() {
             x={tooltipViewport.x}
             y={tooltipViewport.y}
             position="fixed"
+            gapPx={12}
             visible={hoveredId !== null}
           />,
           document.body,

@@ -81,6 +81,8 @@ export const PAGE_Z_STEP = 1.5;
  * book's rendered edges — no hard-coded pixel margins needed.
  */
 export const BOOK_WIDTH_PX = 320;
+/** Must match `--book-height` in tokens.css (440px). */
+export const BOOK_HEIGHT_PX = 440;
 
 /**
  * Horizontal offset applied to the book container so the open state (spread

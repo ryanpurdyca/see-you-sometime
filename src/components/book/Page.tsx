@@ -129,13 +129,16 @@ export function Page({
       }}
     >
       {/* Front face — faces the viewer when the sheet sits on the right stack. */}
-      <div className="absolute inset-0" style={{ backfaceVisibility: "hidden" }}>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ backfaceVisibility: "hidden" }}
+      >
         {front}
       </div>
       {/* Back face — pre-rotated 180° so it reads correctly once the sheet flips
           onto the left stack. translateZ avoids z-fighting with the front face. */}
       <div
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0"
         style={{ transform: "rotateY(180deg) translateZ(1px)", backfaceVisibility: "hidden" }}
       >
         {back}

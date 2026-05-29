@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Cover } from "./Cover";
 import { Page } from "./Page";
 import { BackCover } from "./BackCover";
 import { BookButtons, type BookMode } from "./BookButtons";
 import { CursorFollower } from "./CursorFollower";
+import { BookReadingProvider } from "./BookReadingContext";
 import { PageSurface } from "@/design-system";
 import { bookPages } from "./pages";
 import {
+  BOOK_HEIGHT_PX,
   BOOK_WIDTH_PX,
   NUM_PAGES,
   OPEN_CENTRE_OFFSET,
@@ -178,94 +180,67 @@ export function Book() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Page 0: nav overlays sit behind the people cloud. Drive peel from pointer
+  // position anywhere on the page footprint (including over bubbles).
+  useEffect(() => {
+    if (mode !== "reading" || currentPage !== 0) return;
+
+    const onPointerMove = (e: PointerEvent) => {
+      const top = window.innerHeight / 2 - BOOK_HEIGHT_PX / 2;
+      const bottom = top + BOOK_HEIGHT_PX;
+      const { clientX, clientY } = e;
+      if (clientY < top || clientY > bottom) {
+        setHoveredSide(null);
+        return;
+      }
+      const spine = window.innerWidth / 2;
+      if (clientX >= spine && clientX < spine + BOOK_WIDTH_PX) {
+        setHoveredSide("right");
+      } else if (clientX >= spine - BOOK_WIDTH_PX && clientX < spine) {
+        setHoveredSide("left");
+      } else {
+        setHoveredSide(null);
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onPointerMove);
+  }, [mode, currentPage]);
+
   const readingPage = mode === "reading" ? currentPage : null;
 
+  const readingNav = useMemo(
+    () => ({
+      onRightPagePointer: () => setHoveredSide("right"),
+      onRightPageClick: () => {
+        if (currentPageRef.current < NUM_PAGES) {
+          setCurrentPageSync(Math.min(currentPageRef.current + 1, NUM_PAGES));
+        }
+      },
+    }),
+    [],
+  );
+
   return (
-    <div data-testid="book-root" className="absolute inset-0">
-      {/* 3D scene — centred within the viewport-filling wrapper */}
-      <div
-        className="flex h-full items-center justify-center"
-        style={{
-          perspective: `${SCENE_PERSPECTIVE_PX}px`,
-          perspectiveOrigin: "50% 45%",
-          pointerEvents: "none",
-        }}
-      >
-        <motion.div
-          className="relative"
-          style={{
-            width: "var(--book-width)",
-            height: "var(--book-height)",
-            left: OPEN_CENTRE_OFFSET,
-            transformStyle: "preserve-3d",
-            rotateX: tiltX,
-            rotateZ: tiltZ,
-          }}
-        >
-          <BackCover openness={smoothOpenness} />
-          {Array.from({ length: NUM_PAGES }, (_, i) => (
-            <Page
-              key={i}
-              index={i}
-              openness={smoothOpenness}
-              readingPage={readingPage}
-              front={bookPages[i * 2] ?? <PageSurface />}
-              back={bookPages[i * 2 + 1] ?? <PageSurface />}
-              peeled={
-                !isClosing &&
-                readingPage !== null &&
-                ((i === readingPage - 1 && readingPage > 0) || i === readingPage)
-              }
-              subPeeled={
-                !isClosing && readingPage !== null && i === readingPage + 1 && i < NUM_PAGES
-              }
-              hovered={
-                readingPage !== null &&
-                ((i === readingPage - 1 && readingPage > 0 && hoveredSide === "left") ||
-                  (i === readingPage && hoveredSide === "right"))
-              }
+    <BookReadingProvider value={readingNav}>
+      <div data-testid="book-root" className="absolute inset-0">
+        {/* Reading-mode nav overlays sit behind the 3D scene so page content can
+          re-enable pointer-events on interactive elements (e.g. people bubbles)
+          while empty page areas pass through to these regions for peel + click. */}
+        {mode === "reading" && (
+          <>
+            <div
+              className="absolute cursor-pointer"
+              style={{
+                left: "calc(50vw - var(--book-width))",
+                top: "calc(50vh - var(--book-height) / 2)",
+                width: "var(--book-width)",
+                height: "var(--book-height)",
+              }}
+              onClick={currentPage > 0 ? handleBack : undefined}
+              onMouseEnter={() => setHoveredSide("left")}
+              onMouseLeave={() => setHoveredSide(null)}
             />
-          ))}
-          <Cover openness={smoothOpenness} />
-        </motion.div>
-      </div>
-
-      {/* Idle-mode click region — clicking anywhere on the book triggers Read */}
-      {mode === "idle" && (
-        <div
-          className="absolute cursor-pointer"
-          style={{
-            left: "calc(50vw - var(--book-width))",
-            top: "calc(50vh - var(--book-height) / 2)",
-            width: "calc(var(--book-width) * 2)",
-            height: "var(--book-height)",
-          }}
-          onClick={handleRead}
-          onMouseEnter={() => setHoveringBook(true)}
-          onMouseLeave={() => setHoveringBook(false)}
-        />
-      )}
-
-      {/* Transparent click/hover regions in reading mode — outside the
-          perspective container so hit-testing is in flat screen space. */}
-      {mode === "reading" && (
-        <>
-          {/* Left page — navigates Back */}
-          <div
-            className="absolute cursor-pointer"
-            style={{
-              left: "calc(50vw - var(--book-width))",
-              top: "calc(50vh - var(--book-height) / 2)",
-              width: "var(--book-width)",
-              height: "var(--book-height)",
-            }}
-            onClick={currentPage > 0 ? handleBack : undefined}
-            onMouseEnter={() => setHoveredSide("left")}
-            onMouseLeave={() => setHoveredSide(null)}
-          />
-          {/* Right page — navigates Next; suppressed on page 0 so the people
-              cloud receives pointer events for per-circle hover. */}
-          {currentPage > 0 && (
             <div
               className="absolute cursor-pointer"
               style={{
@@ -278,25 +253,89 @@ export function Book() {
               onMouseEnter={() => setHoveredSide("right")}
               onMouseLeave={() => setHoveredSide(null)}
             />
-          )}
-        </>
-      )}
+          </>
+        )}
 
-      {/* 2D button overlay — outside the perspective container so it isn't
+        {/* 3D scene — centred within the viewport-filling wrapper */}
+        <div
+          className="flex h-full items-center justify-center"
+          style={{
+            perspective: `${SCENE_PERSPECTIVE_PX}px`,
+            perspectiveOrigin: "50% 45%",
+            pointerEvents: "none",
+          }}
+        >
+          <motion.div
+            className="relative"
+            style={{
+              width: "var(--book-width)",
+              height: "var(--book-height)",
+              left: OPEN_CENTRE_OFFSET,
+              transformStyle: "preserve-3d",
+              rotateX: tiltX,
+              rotateZ: tiltZ,
+            }}
+          >
+            <BackCover openness={smoothOpenness} />
+            {Array.from({ length: NUM_PAGES }, (_, i) => (
+              <Page
+                key={i}
+                index={i}
+                openness={smoothOpenness}
+                readingPage={readingPage}
+                front={bookPages[i * 2] ?? <PageSurface />}
+                back={bookPages[i * 2 + 1] ?? <PageSurface />}
+                peeled={
+                  !isClosing &&
+                  readingPage !== null &&
+                  ((i === readingPage - 1 && readingPage > 0) || i === readingPage)
+                }
+                subPeeled={
+                  !isClosing && readingPage !== null && i === readingPage + 1 && i < NUM_PAGES
+                }
+                hovered={
+                  readingPage !== null &&
+                  ((i === readingPage - 1 && readingPage > 0 && hoveredSide === "left") ||
+                    (i === readingPage && hoveredSide === "right"))
+                }
+              />
+            ))}
+            <Cover openness={smoothOpenness} />
+          </motion.div>
+        </div>
+
+        {/* Idle-mode click region — clicking anywhere on the book triggers Read */}
+        {mode === "idle" && (
+          <div
+            className="absolute cursor-pointer"
+            style={{
+              left: "calc(50vw - var(--book-width))",
+              top: "calc(50vh - var(--book-height) / 2)",
+              width: "calc(var(--book-width) * 2)",
+              height: "var(--book-height)",
+            }}
+            onClick={handleRead}
+            onMouseEnter={() => setHoveringBook(true)}
+            onMouseLeave={() => setHoveringBook(false)}
+          />
+        )}
+
+        {/* 2D button overlay — outside the perspective container so it isn't
           affected by 3D transforms. Absolutely positioned using vw/vh so it
           aligns with the open book spread regardless of viewport size. */}
-      <BookButtons
-        openness={smoothOpenness}
-        mode={mode}
-        currentPage={currentPage}
-        onRead={handleRead}
-        onCancel={handleCancel}
-        onNext={handleNext}
-        onBack={handleBack}
-        onClose={handleClose}
-      />
+        <BookButtons
+          openness={smoothOpenness}
+          mode={mode}
+          currentPage={currentPage}
+          onRead={handleRead}
+          onCancel={handleCancel}
+          onNext={handleNext}
+          onBack={handleBack}
+          onClose={handleClose}
+        />
 
-      <CursorFollower openness={smoothOpenness} mode={mode} hoveringBook={hoveringBook} />
-    </div>
+        <CursorFollower openness={smoothOpenness} mode={mode} hoveringBook={hoveringBook} />
+      </div>
+    </BookReadingProvider>
   );
 }

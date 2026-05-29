@@ -9,6 +9,8 @@ type Props = {
   visible: boolean;
   /** `fixed` for viewport coords (e.g. portaled tooltips); default `absolute`. */
   position?: "absolute" | "fixed";
+  /** Gap between the anchor point and the bottom of the tooltip (px). */
+  gapPx?: number;
   className?: string;
 };
 
@@ -16,7 +18,15 @@ type Props = {
  * Presentational label tooltip. Does not capture pointer events so it never
  * interferes with hit targets or layout simulations beneath it.
  */
-export function Tooltip({ label, x, y, visible, position = "absolute", className }: Props) {
+export function Tooltip({
+  label,
+  x,
+  y,
+  visible,
+  position = "absolute",
+  gapPx = 12,
+  className,
+}: Props) {
   return (
     <div
       role="tooltip"
@@ -30,7 +40,7 @@ export function Tooltip({ label, x, y, visible, position = "absolute", className
       style={{
         left: x,
         top: y,
-        transform: "translate(-50%, calc(-100% - 8px))",
+        transform: `translate(-50%, calc(-100% - ${gapPx}px))`,
       }}
     >
       {label}

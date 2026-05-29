@@ -269,7 +269,7 @@ Historical entries below remain for context; **this list is the source of truth*
 - **Page 1 content** (`ChapterOpen` in `pages.tsx`) is a full-bleed `PeopleCloud` of 25 coworker portraits from `public/images/people/`, listed in `people.ts` with display names derived from filenames. "Chapter One" copy removed.
 - **Layout engine.** Golden-angle seed + static collision solve to a stable **home** layout (`homeX`/`homeY`, shared `baseR`). DOM bubbles are fixed at home; Framer Motion springs animate `x`/`y`/`scale` deltas toward precomputed targets (`PEOPLE_CLOUD_SPRING`). No per-frame RAF sim — hover jitter avoided.
 - **Hover targets.** On hover, radii are set (grow hovered, shrink home-neighbors within `PEOPLE_CLOUD_NEIGHBOR_RANGE_PX`), hovered bubble is **immovable**, neighbors are solved once to a collision-free layout; `useMemo` caches per `hoveredId`. Tooltip portaled to `document.body` at hovered home center + grown radius.
-- **Pointer-events tradeoff.** The 3D scene wrapper stays `pointer-events: none`; `PeopleCloud` root is `pointer-events: auto`. The reading-mode **right-page nav overlay is omitted when `currentPage === 0`** so circles receive hover; Next from page 1 uses the button row or ArrowRight. Idle click-to-open overlay still covers the spread (hover on page 1 only works in reading mode at page 0).
+- **Pointer-events tradeoff.** Page faces are `pointer-events: none`; `PeopleCloud` bubbles use `pointer-events: auto`. Reading-mode L/R nav overlays render **behind** the 3D scene so empty page areas pass through to peel/click. On page 0, bubbles forward right-page peel/Next via `BookReadingContext`; `Book` also sets `hoveredSide` from `pointermove` over the full page footprint (including over bubbles).
 
 ## 6. Design system
 

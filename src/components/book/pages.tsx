@@ -28,7 +28,7 @@ function PageHeading({ children }: { children: ReactNode }) {
 
 function ChapterOpen() {
   return (
-    <PageSurface className="overflow-hidden p-0">
+    <PageSurface className="pointer-events-none overflow-hidden p-0">
       <PeopleCloud />
     </PageSurface>
   );
