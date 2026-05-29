@@ -7,7 +7,8 @@ import {
   NUM_PAGES,
   PAGE_BASE_PEEL_LEFT_DEG,
   PAGE_BASE_PEEL_RIGHT_DEG,
-  PAGE_FAN_SPREAD,
+  PAGE_FAN_FAR_DEG,
+  PAGE_FAN_NEAR_DEG,
   PAGE_HOVER_BOOST_DEG,
   PAGE_SUB_PEEL_DEG,
   PAGE_Z_STEP,
@@ -45,16 +46,19 @@ export function Page({
   front,
   back,
 }: Props) {
-  // fanFraction is highest for sheet 0 (page 1) so it gets the largest tilt and
-  // opens first — leaving it the most forward-leaning (and therefore on-top)
-  // page at every openness. A page hinged at the spine leans its right edge
-  // toward the viewer as it rotates, so the most-rotated page sits in front; the
-  // fan spread is capped below 90° (see PAGE_FAN_SPREAD) so page 1 always wins
-  // and stays readable, matching the page reading mode opens to.
-  const fanFraction = (NUM_PAGES - index) / (NUM_PAGES + 1);
-  const finalAngle = -PAGE_FAN_SPREAD * fanFraction;
+  // Full-spread idle fan (see §5 2026-05-29). `depth` runs 0 → 1 from sheet 0
+  // (page 1) to the last sheet. The sheets fill the whole open book at evenly-
+  // spaced angles: page 1 trails farthest behind the cover (PAGE_FAN_FAR_DEG)
+  // and each deeper sheet steps uniformly toward the closed right edge (down to
+  // PAGE_FAN_NEAR_DEG), monotonic in index so the fan reads in reading order
+  // left → right. A mid-book sheet lands near 90° (edge-on) — accepted for an
+  // even riffle.
+  const depth = NUM_PAGES > 1 ? index / (NUM_PAGES - 1) : 0;
+  const finalAngle = -(PAGE_FAN_FAR_DEG - (PAGE_FAN_FAR_DEG - PAGE_FAN_NEAR_DEG) * depth);
 
-  const opensAt = 0.1 + (1 - fanFraction) * 0.5;
+  // Pages cascade out behind the cover: page 1 starts spreading first (just
+  // after the cover begins to swing), deeper sheets follow in turn.
+  const opensAt = 0.1 + depth * 0.5;
   const idleRotateY = useTransform(openness, [opensAt, 1], [0, finalAngle], { clamp: true });
 
   // Base rotateY — driven by idle subscription or imperative spring (reading).
@@ -93,13 +97,24 @@ export function Page({
     return () => controls.stop();
   }, [peeled, subPeeled, hovered, readingPage, index, hoverPeel]);
 
-  // In reading mode, reverse Z-ordering for the right stack so readingPage sits
-  // on top. Without this, readingPage has the lowest Z and its peel disappears
-  // behind the pages above it. Left stack keeps the natural order.
-  const translateZ =
-    readingPage !== null && index >= readingPage
-      ? (NUM_PAGES - (index - readingPage)) * PAGE_Z_STEP
-      : (index + 1) * PAGE_Z_STEP;
+  // Z-ordering.
+  //  - Reading mode, right stack: reversed so readingPage sits on top
+  //    (otherwise its peel hides behind the pages above it).
+  //  - Reading mode, left stack: natural order (most-recently-flipped on top).
+  //  - Idle: descending so sheet 0 (page 1) is on top — same order the right
+  //    stack uses at readingPage 0. Matching them means the reading→idle switch
+  //    at the end of a close doesn't flip the stack; without this, sheets snap
+  //    to ascending order and a lower sheet (e.g. page 3) flashes through page 1
+  //    in the instant before the closing cover seats flat.
+  let translateZ: number;
+  if (readingPage !== null) {
+    translateZ =
+      index >= readingPage
+        ? (NUM_PAGES - (index - readingPage)) * PAGE_Z_STEP
+        : (index + 1) * PAGE_Z_STEP;
+  } else {
+    translateZ = (NUM_PAGES - index) * PAGE_Z_STEP;
+  }
 
   return (
     <motion.div
