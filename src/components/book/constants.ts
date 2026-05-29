@@ -20,17 +20,25 @@ export const NUM_PAGES = Math.ceil(bookPages.length / 2);
 export const COVER_OPEN_ANGLE = -174;
 
 /**
- * Maximum total fan spread across all pages, in degrees. Sheet 0 (page 1) gets
- * the largest share and leads the fan; deeper sheets tilt progressively less.
+ * Idle fan spread (see §5 2026-05-29 — full-spread rework). A book-opening
+ * (rotateY) fan that splays the sheets EVENLY across the WHOLE open book, from
+ * near the closed right edge (PAGE_FAN_NEAR_DEG) all the way left to just behind
+ * the open cover (PAGE_FAN_FAR_DEG). Sheet 0 (page 1) trails farthest behind the
+ * cover at the FAR angle; each deeper sheet rests at an evenly-spaced shallower
+ * angle down to the last sheet at NEAR — so scanning the fan left → right passes
+ * page 1, 2, 3 … N in reading order (the angle is monotonic in sheet index).
  *
- * Capped well below 90° on purpose: a page hinged at the spine leans its right
- * edge toward the viewer as it rotates, so the most-tilted page is the frontmost
- * one. Keeping every tilt under 90° guarantees page 1 (the largest tilt) is
- * always on top and still readable — if the spread crossed 90°, whichever page
- * passed ~90° would jump in front, so the page shown in idle wouldn't match the
- * page reading mode opens to.
+ * The spacing is deliberately uniform: pages aren't meant to be readable here
+ * (that's what opening the book is for), so we favour an even riffle over a
+ * cleaner-but-lopsided look. This means a mid-book sheet sits near 90° (edge-on)
+ * and leans most toward the viewer — accepted as the natural look of a fanned
+ * book.
+ *
+ * FAR stays shy of the cover's COVER_OPEN_ANGLE (−174°) so the open cover
+ * always sits outermost on the left and the fan tucks behind it.
  */
-export const PAGE_FAN_SPREAD = 46;
+export const PAGE_FAN_NEAR_DEG = 12;
+export const PAGE_FAN_FAR_DEG = 165;
 
 /**
  * Static scene tilt — gives the book the slight three-quarter perspective
@@ -52,8 +60,20 @@ export const OPENNESS_SPRING = {
   mass: 0.6,
 } as const;
 
-/** Z-offset between stacked pages (px). Prevents z-fighting when closed. */
-export const PAGE_Z_STEP = 0.4;
+/**
+ * Z-offset between stacked pages (px). Separates the parallel page planes in
+ * depth so the 3D sort is stable.
+ *
+ * Must be comfortably large: when the book closes with no pages flipped, every
+ * sheet sits at exactly `rotateY: 0` — six perfectly coplanar planes. At the
+ * old 0.4px the depth gaps fell below the renderer's precision after the
+ * perspective divide, so the sort went unstable as the cover seated and a lower
+ * sheet (e.g. page 3) flickered through page 1. (Flipping pages first hid it:
+ * the sheets were still mid-spring at varied angles, so not coplanar.) The fan
+ * is rotation-dominated and the closed/reading stacks share one outline, so a
+ * larger step is invisible everywhere except killing that flicker.
+ */
+export const PAGE_Z_STEP = 1.5;
 
 /**
  * Must equal the `--book-width` CSS token in tokens.css (320px).
